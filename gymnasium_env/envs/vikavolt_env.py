@@ -15,192 +15,130 @@ class Actions(Enum):
 class VikavoltEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
-    def __init__(self, **kwargs, render_mode=None, size=5):
-        self.size = size  # The size of the square grid
-        self.window_size = 512  # The size of the PyGame window
-
-        try:
-            self.seed = kwargs['seed']
-        except:
-            self.seed - 12345
-    
-        try:
-            self.params = kwargs['params']
-        except:
-            self.params = {'mu': 1.0489, 'C_Sf': 4.718, 'C_Sr': 5.4562, 'lf': 0.15875, 'lr': 0.17145, 'h': 0.074, 'm': 3.74, 'I': 0.04712, 's_min': -0.4189, 's_max': 0.4189, 'sv_min': -3.2, 'sv_max': 3.2, 'v_switch': 7.319, 'a_max': 9.51, 'v_min':-5.0, 'v_max': 20.0, 'width': 0.31, 'length': 0.58}
-
-        # simulation parameters
-        try:
-            self.num_agents = kwargs['num_agents']
-        except:
-            self.num_agents = 2
-
-        try:
-            self.timestep = kwargs['timestep']
-        except:
-            self.timestep = 0.01
-    
-        self.poses_x = []
-        self.poses_y = []
-        self.poses_theta = []
-
+    def __init__(self, gate_positions = None, max_steps=1000):
         # Observations are dictionaries with the agent's and the target's location.
         # Each location is encoded as an element of {0, ..., `size`}^2,
         # i.e. MultiDiscrete([size, size]).
-        self.observation_space = spaces.Dict(
-            {
-                "agent": spaces.Box(0, size - 1, shape=(2,), dtype=int),
-                "target": spaces.Box(0, size - 1, shape=(2,), dtype=int),
-            }
+        #self.observation_space = spaces.Dict(
+        #    {
+        #        "agent": spaces.Box(0, size - 1, shape=(2,), dtype=int),
+        #        "target": spaces.Box(0, size - 1, shape=(2,), dtype=int),
+        #    }
+        #)
+
+        # we have a vector of 31 components representing the observation space
+        self.action_space = spaces.Box(
+            low=np.array([0.0, -1.0, -1.0, -1.0] ,dtype=np.float32),
+            high=np.array([1.0, 1.0, 1.0, 1.0], dtype=np.float32),
         )
 
-        # We have 4 actions, corresponding to "right", "up", "left", "down", "right"
-        self.action_space = spaces.Discrete(4)
+        # We have 4 actions, corresponding to thrust, roll, pitch, yaw
+        self.observation_space = spaces.Box(
+            low=-np.inf, high=np.inf, shape=(31,),dtype=np.float32
+        )
 
-        """
-        The following dictionary maps abstract actions from `self.action_space` to 
-        the direction we will walk in if that action is taken.
-        i.e. 0 corresponds to "right", 1 to "up" etc.
-        """
-        self._action_to_direction = {
-            Actions.right.value: np.array([1, 0]),
-            Actions.up.value: np.array([0, 1]),
-            Actions.left.value: np.array([-1, 0]),
-            Actions.down.value: np.array([0, -1]),
-        }
+        # Quadrotor state
+        self.position = np.zeros(3)        
+        self.velocity = np.zeros(3)        
+        self.R = np.eye(3)
+        self.prev_action = np.zeros(4)
 
-        assert render_mode is None or render_mode in self.metadata["render_modes"]
-        self.render_mode = render_mode
+        # Gates
+        if gate_positions is None:
+            self.gates = [
+                np.array([5,0,1,0,0,0]),
+                np.array([10,0,1,0,0,0]),
+                np.array([15,3,1,0,0,0]),
+            ]
+        else:
+            self.gates = gate_positions
 
-        """
-        If human-rendering is used, `self.window` will be a reference
-        to the window that we draw to. `self.clock` will be a clock that is used
-        to ensure that the environment is rendered at the correct framerate in
-        human-mode. They will remain `None` until human-mode is used for the
-        first time.
-        """
-        self.window = None
-        self.clock = None
+        self.current_gate_idx = 0
+        self.max_steps = max_steps
+        self.step_count = 0
+        self.collision_flag = False        
 
     def _get_obs(self):
-        return {"agent": self._agent_location, "target": self._target_location}
+        gate = self.gates[self.current_gate_idx]
+        gate_pos = gate[:3]
+        rel_pos = gate_pos - self.position
 
-    def _get_info(self):
-        return {
-            "distance": np.linalg.norm(
-                self._agent_location - self._target_location, ord=1
-            )
-        }
+        # fake gate rotation for now
+        gate_R = np.eye(3)
+        rel_R = gate_R.T @ self.R 
+
+        # flatten state
+        obs = np.concatenate([
+            self.position, 
+            self.velocity, 
+            self.R.flatten(), 
+            rel_pos,
+            rel_R.flatten(),
+            self.prev_action
+        ])
+        
+        assert obs.shape[0] == 31
+        return obs.astype(np.float32)
 
     def reset(self, seed=None, options=None):
         # We need the following line to seed self.np_random
         super().reset(seed=seed)
 
-        # Choose the agent's location uniformly at random
-        self._agent_location = self.np_random.integers(0, self.size, size=2, dtype=int)
-
-        # We will sample the target's location randomly until it does not
-        # coincide with the agent's location
-        self._target_location = self._agent_location
-        while np.array_equal(self._target_location, self._agent_location):
-            self._target_location = self.np_random.integers(
-                0, self.size, size=2, dtype=int
-            )
+        self.position = np.array([0.0,0.0,1.0])
+        self.velocity = np.zeros(3)
+        self.R = np.eye(3)
+        self.prev_action = np.zeros(4)
+        self.step_count = 0
+        self.current_gate_idx = 0
+        self.collision_flag = False        
 
         observation = self._get_obs()
-        info = self._get_info()
 
-        if self.render_mode == "human":
-            self._render_frame()
+        return observation, {}
 
-        return observation, info
+    def dummy_physics(self, action, dt=0.02):
+        thrust, roll, pitch, yaw = action
+
+        # Extremely simplified kinematics (placeholder)
+        #self.velocity += np.array([pitch, roll, thrust - 0.5]) * dt
+        self.position += self.velocity * dt
+
+        # Dummy rotation update
+        # (Use real quaternion/rotation dynamics in your sim)
+        yaw_rate = yaw * 0.1
+        dR = np.array([
+            [np.cos(yaw_rate*dt), -np.sin(yaw_rate*dt), 0],
+            [np.sin(yaw_rate*dt),  np.cos(yaw_rate*dt), 0],
+            [0, 0, 1]
+        ])
+        self.R = self.R @ dR
 
     def step(self, action):
-        # Map the action (element of {0,1,2,3}) to the direction we walk in
-        direction = self._action_to_direction[action]
-        # We use `np.clip` to make sure we don't leave the grid
-        self._agent_location = np.clip(
-            self._agent_location + direction, 0, self.size - 1
-        )
-        # An episode is done iff the agent has reached the target
-        terminated = np.array_equal(self._agent_location, self._target_location)
-        reward = 1 if terminated else 0  # Binary sparse rewards
-        observation = self._get_obs()
-        info = self._get_info()
+        self.step_count += 1
+        
+        self.dummy_physics(action)
+        self.prev_action = action.copy()
 
-        if self.render_mode == "human":
-            self._render_frame()
+        terminated = False
+        if self.collision_flag:
+            terminated = True        
 
-        return observation, reward, terminated, False, info
+        gate_pos = self.gates[self.current_gate_idx][:3]
+        if np.linalg.norm(self.position - gate_pos) < 0.5:
+            self.current_gate_idx += 1
+            if self.current_gate_idx >= len(self.gates):
+                terminated = True
+            
+        truncated = self.step_count >= self.max_steps
+    
+        dist_to_gate = np.linalg.norm(self.position - gate_pos)
+        reward = -dist_to_gate
+
+        obs = self._get_obs()
+        return obs, reward, terminated, truncated, {}
 
     def render(self):
-        if self.render_mode == "rgb_array":
-            return self._render_frame()
-
-    def _render_frame(self):
-        if self.window is None and self.render_mode == "human":
-            pygame.init()
-            pygame.display.init()
-            self.window = pygame.display.set_mode((self.window_size, self.window_size))
-        if self.clock is None and self.render_mode == "human":
-            self.clock = pygame.time.Clock()
-
-        canvas = pygame.Surface((self.window_size, self.window_size))
-        canvas.fill((255, 255, 255))
-        pix_square_size = (
-            self.window_size / self.size
-        )  # The size of a single grid square in pixels
-
-        # First we draw the target
-        pygame.draw.rect(
-            canvas,
-            (255, 0, 0),
-            pygame.Rect(
-                pix_square_size * self._target_location,
-                (pix_square_size, pix_square_size),
-            ),
-        )
-        # Now we draw the agent
-        pygame.draw.circle(
-            canvas,
-            (0, 0, 255),
-            (self._agent_location + 0.5) * pix_square_size,
-            pix_square_size / 3,
-        )
-
-        # Finally, add some gridlines
-        for x in range(self.size + 1):
-            pygame.draw.line(
-                canvas,
-                0,
-                (0, pix_square_size * x),
-                (self.window_size, pix_square_size * x),
-                width=3,
-            )
-            pygame.draw.line(
-                canvas,
-                0,
-                (pix_square_size * x, 0),
-                (pix_square_size * x, self.window_size),
-                width=3,
-            )
-
-        if self.render_mode == "human":
-            # The following line copies our drawings from `canvas` to the visible window
-            self.window.blit(canvas, canvas.get_rect())
-            pygame.event.pump()
-            pygame.display.update()
-
-            # We need to ensure that human-rendering occurs at the predefined framerate.
-            # The following line will automatically add a delay to
-            # keep the framerate stable.
-            self.clock.tick(self.metadata["render_fps"])
-        else:  # rgb_array
-            return np.transpose(
-                np.array(pygame.surfarray.pixels3d(canvas)), axes=(1, 0, 2)
-            )
+        pass
 
     def close(self):
-        if self.window is not None:
-            pygame.display.quit()
-            pygame.quit()
+        pass
