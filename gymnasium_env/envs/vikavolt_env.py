@@ -66,7 +66,7 @@ class VikavoltEnv(gym.Env):
 
     def _get_obs(self):
         gate = self.gates[self.current_gate_idx][:3]
-        rel_pos = gate_pos - self.position
+        rel_pos = gate - self.position
 
         # fake gate rotation for now
         rel_R = np.eye(3).flatten() # TODO placeholder for now
