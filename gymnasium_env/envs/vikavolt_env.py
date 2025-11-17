@@ -15,9 +15,34 @@ class Actions(Enum):
 class VikavoltEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
-    def __init__(self, render_mode=None, size=5):
+    def __init__(self, **kwargs, render_mode=None, size=5):
         self.size = size  # The size of the square grid
         self.window_size = 512  # The size of the PyGame window
+
+        try:
+            self.seed = kwargs['seed']
+        except:
+            self.seed - 12345
+    
+        try:
+            self.params = kwargs['params']
+        except:
+            self.params = {'mu': 1.0489, 'C_Sf': 4.718, 'C_Sr': 5.4562, 'lf': 0.15875, 'lr': 0.17145, 'h': 0.074, 'm': 3.74, 'I': 0.04712, 's_min': -0.4189, 's_max': 0.4189, 'sv_min': -3.2, 'sv_max': 3.2, 'v_switch': 7.319, 'a_max': 9.51, 'v_min':-5.0, 'v_max': 20.0, 'width': 0.31, 'length': 0.58}
+
+        # simulation parameters
+        try:
+            self.num_agents = kwargs['num_agents']
+        except:
+            self.num_agents = 2
+
+        try:
+            self.timestep = kwargs['timestep']
+        except:
+            self.timestep = 0.01
+    
+        self.poses_x = []
+        self.poses_y = []
+        self.poses_theta = []
 
         # Observations are dictionaries with the agent's and the target's location.
         # Each location is encoded as an element of {0, ..., `size`}^2,
