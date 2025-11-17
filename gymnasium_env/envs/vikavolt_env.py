@@ -33,9 +33,15 @@ class VikavoltEnv(gym.Env):
         )
 
         # We have 4 actions, corresponding to thrust, roll, pitch, yaw
-        self.observation_space = spaces.Box(
-            low=-np.inf, high=np.inf, shape=(31,),dtype=np.float32
-        )
+        self.observation_space = spaces.Dict({
+            "pos": spaces.Box(-np.inf, np.inf, (3,), np.float32),
+            "vel": spaces.Box(-np.inf, np.inf, (3,), np.float32),
+            "R":   spaces.Box(-np.inf, np.inf, (9,), np.float32),
+            "rel_gate_pos": spaces.Box(-np.inf, np.inf, (3,), np.float32),
+            "rel_gate_R":   spaces.Box(-np.inf, np.inf, (9,), np.float32),
+            "prev_action":  spaces.Box(-1, 1, (4,), np.float32)
+        })
+
 
         # Quadrotor state
         self.position = np.zeros(3)        
@@ -59,26 +65,20 @@ class VikavoltEnv(gym.Env):
         self.collision_flag = False        
 
     def _get_obs(self):
-        gate = self.gates[self.current_gate_idx]
-        gate_pos = gate[:3]
+        gate = self.gates[self.current_gate_idx][:3]
         rel_pos = gate_pos - self.position
 
         # fake gate rotation for now
-        gate_R = np.eye(3)
-        rel_R = gate_R.T @ self.R 
+        rel_R = np.eye(3).flatten() # TODO placeholder for now
 
-        # flatten state
-        obs = np.concatenate([
-            self.position, 
-            self.velocity, 
-            self.R.flatten(), 
-            rel_pos,
-            rel_R.flatten(),
-            self.prev_action
-        ])
-        
-        assert obs.shape[0] == 31
-        return obs.astype(np.float32)
+        return {
+            "pos": self.position,
+            "vel": self.velocity,
+            "R": self.R.flatten(),
+            "rel_gate_pos": rel_pos,
+            "rel_gate_R": rel_R,
+            "prev_action": self.prev_action,
+        }
 
     def reset(self, seed=None, options=None):
         # We need the following line to seed self.np_random
