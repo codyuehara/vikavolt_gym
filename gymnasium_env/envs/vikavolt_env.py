@@ -3,29 +3,12 @@ import gymnasium as gym
 from gymnasium import spaces
 import pygame
 import numpy as np
-
-
-class Actions(Enum):
-    right = 0
-    up = 1
-    left = 2
-    down = 3
-
+from gymnasium_env.envs.simulation import Quadrotor
 
 class VikavoltEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
     def __init__(self, gate_positions = None, max_steps=1000):
-        # Observations are dictionaries with the agent's and the target's location.
-        # Each location is encoded as an element of {0, ..., `size`}^2,
-        # i.e. MultiDiscrete([size, size]).
-        #self.observation_space = spaces.Dict(
-        #    {
-        #        "agent": spaces.Box(0, size - 1, shape=(2,), dtype=int),
-        #        "target": spaces.Box(0, size - 1, shape=(2,), dtype=int),
-        #    }
-        #)
-
         # we have a vector of 31 components representing the observation space
         self.action_space = spaces.Box(
             low=np.array([0.0, -1.0, -1.0, -1.0] ,dtype=np.float32),
@@ -41,7 +24,6 @@ class VikavoltEnv(gym.Env):
             "rel_gate_R":   spaces.Box(-np.inf, np.inf, (9,), np.float32),
             "prev_action":  spaces.Box(-1, 1, (4,), np.float32)
         })
-
 
         # Quadrotor state
         self.position = np.zeros(3)        
@@ -63,6 +45,10 @@ class VikavoltEnv(gym.Env):
         self.max_steps = max_steps
         self.step_count = 0
         self.collision_flag = False        
+
+        self.lap_times = []
+        self.lap_count = 0
+        self.quadrotor = Quadrotor()
 
     def _get_obs(self):
         gate = self.gates[self.current_gate_idx][:3]
@@ -114,9 +100,17 @@ class VikavoltEnv(gym.Env):
         self.R = self.R @ dR
 
     def step(self, action):
+        # call simulation step
+        state = self.quadrotor.step(action)
+        self.position = state.position
+        self.velocity = state.velocity
+        #self.dummy_physics(action)
+        # obs = self.sim.step(action)
+        # lap_times = self.lap_times
+        # lap_count = self.lap_count
+
         self.step_count += 1
         
-        self.dummy_physics(action)
         self.prev_action = action.copy()
 
         terminated = False
