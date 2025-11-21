@@ -101,7 +101,8 @@ class VikavoltEnv(gym.Env):
             if self.current_gate_idx >= len(self.gates):
                 terminated = True
             
-        truncated = self.step_count >= self.max_steps
+        #truncated = self.step_count >= self.max_steps
+        truncated = False
     
         dist_to_gate = np.linalg.norm(self.position - gate_pos)
         reward = -dist_to_gate
