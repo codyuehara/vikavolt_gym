@@ -1,8 +1,9 @@
 import gymnasium as gym
 import gymnasium_env
+import numpy as np
 
 # Test specific action sequences to verify behavior
-env = gym.make("gymnasium_env/Vikavolt-v0")
+env = gym.make("gymnasium_env/Vikavolt-v0", mass=2, init_position=[5, 4, 3])
 obs, info = env.reset(seed=42)  # Use seed for reproducible testing
 
 starting = obs['pos']
@@ -14,7 +15,7 @@ for _ in range(1000):
 
     if terminated or truncated:
         break
-    print(f"Action {action}: obs={obs}, reward={reward}")
+#    print(f"Action {action}: obs={obs}, reward={reward}")
 
 env.close()
 

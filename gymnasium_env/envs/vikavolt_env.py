@@ -26,7 +26,8 @@ class VikavoltEnv(gym.Env):
         })
 
         # Quadrotor state
-        self.init_position = np.zeros(3) if init_position is None else init_position
+#        self.init_position = np.zeros(3) if init_position is None else init_position
+        self.init_position = init_position
         self.position = self.init_position       
         self.velocity = np.zeros(3)        
         self.R = np.eye(3)
@@ -50,7 +51,7 @@ class VikavoltEnv(gym.Env):
         self.lap_times = []
         self.lap_count = 0
         print(self.init_position)
-        self.quadrotor = Quadrotor(mass, self.init_position)
+        self.quadrotor = Quadrotor(mass=mass, initial_position=self.init_position)
 
     def _get_obs(self):
         gate = self.gates[self.current_gate_idx][:3]
