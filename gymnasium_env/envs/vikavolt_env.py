@@ -8,7 +8,7 @@ from gymnasium_env.envs.simulation import Quadrotor
 class VikavoltEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
-    def __init__(self, mass=1.0, init_position = None, gate_positions = None,  dt=0.01, max_steps=1000):
+    def __init__(self, mass=1.0, init_position = None, gate_positions = None,  dt=0.01):
         # we have a vector of 31 components representing the observation space
         self.action_space = spaces.Box(
             low=np.array([0.0, -1.0, -1.0, -1.0] ,dtype=np.float32),
@@ -36,7 +36,7 @@ class VikavoltEnv(gym.Env):
         self.gates = gate_positions
 
         self.current_gate_idx = 0
-        self.max_steps = max_steps
+        #self.max_steps = max_steps
         self.step_count = 0
         self.collision_flag = False        
 
@@ -92,14 +92,14 @@ class VikavoltEnv(gym.Env):
         self.prev_action = action.copy()
 
         terminated = False
-        if self.collision_flag:
-            terminated = True        
+        #if self.collision_flag:
+        #    terminated = True        
 
         gate_pos = self.gates[self.current_gate_idx][:3]
-        if np.linalg.norm(self.position - gate_pos) < 0.5:
-            self.current_gate_idx += 1
-            if self.current_gate_idx >= len(self.gates):
-                terminated = True
+        #if np.linalg.norm(self.position - gate_pos) < 0.5:
+        #    self.current_gate_idx += 1
+        #    if self.current_gate_idx >= len(self.gates):
+        #        terminated = True
             
         #truncated = self.step_count >= self.max_steps
         truncated = False
