@@ -28,7 +28,7 @@ class VikavoltEnv(gym.Env):
         # Quadrotor state
 #        self.init_position = np.zeros(3) if init_position is None else init_position
         self.init_position = init_position
-        self.position = self.init_position       
+        self.position = self.init_position.copy()
         self.velocity = np.zeros(3)        
         self.R = np.eye(3)
         self.prev_action = np.zeros(4)
