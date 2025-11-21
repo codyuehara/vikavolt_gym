@@ -42,7 +42,7 @@ class Quadrotor:
         self.J_inv = np.linalg.inv(self.J)
 
         self.g = np.array([0,0,-9.81])
-        self.dt = 0.01
+        self.dt = 0.1
 
         # initial state
         self.state = State(
