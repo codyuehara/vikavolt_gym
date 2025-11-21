@@ -46,7 +46,7 @@ class Quadrotor:
 
         # initial state
         self.state = State(
-            position=np.zeros(3) if initial_position is None else np.array(initial_position, dtype=float),
+            position=np.zeros(3) if initial_position is None else initial_position,
             velocity=np.zeros(3),
             orientation=np.array([0,0,0,1]),
             angular_velocity=np.zeros(3),

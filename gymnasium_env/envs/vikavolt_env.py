@@ -49,7 +49,8 @@ class VikavoltEnv(gym.Env):
 
         self.lap_times = []
         self.lap_count = 0
-        self.quadrotor = Quadrotor(mass, init_position)
+        print(self.init_position)
+        self.quadrotor = Quadrotor(mass, self.init_position)
 
     def _get_obs(self):
         gate = self.gates[self.current_gate_idx][:3]
