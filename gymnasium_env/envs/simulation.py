@@ -29,7 +29,7 @@ class State:
 #    motor_speeds: np.ndarray # (4,)
 
 class Quadrotor:
-    def __init__(self, mass=1.0, initial_position=None):
+    def __init__(self, mass=1.0, initial_position=None, dt=0.01):
         # physical constants
         self.mass = mass
         #self.arm_length = 0.2 # meters?
@@ -42,7 +42,7 @@ class Quadrotor:
         self.J_inv = np.linalg.inv(self.J)
 
         self.g = np.array([0,0,-9.81])
-        self.dt = 0.1
+        self.dt = dt
 
         # initial state
         self.state = State(

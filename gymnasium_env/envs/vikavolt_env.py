@@ -8,7 +8,7 @@ from gymnasium_env.envs.simulation import Quadrotor
 class VikavoltEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
-    def __init__(self, mass=1.0, init_position = None, gate_positions = None, max_steps=1000):
+    def __init__(self, mass=1.0, init_position = None, gate_positions = None,  dt=0.01, max_steps=1000):
         # we have a vector of 31 components representing the observation space
         self.action_space = spaces.Box(
             low=np.array([0.0, -1.0, -1.0, -1.0] ,dtype=np.float32),
@@ -33,15 +33,7 @@ class VikavoltEnv(gym.Env):
         self.R = np.eye(3)
         self.prev_action = np.zeros(4)
 
-        # Gates
-        if gate_positions is None:
-            self.gates = [
-                np.array([5,0,1,0,0,0]),
-                np.array([10,0,1,0,0,0]),
-                np.array([15,3,1,0,0,0]),
-            ]
-        else:
-            self.gates = gate_positions
+        self.gates = gate_positions
 
         self.current_gate_idx = 0
         self.max_steps = max_steps
@@ -51,12 +43,12 @@ class VikavoltEnv(gym.Env):
         self.lap_times = []
         self.lap_count = 0
         print(self.init_position)
-        self.quadrotor = Quadrotor(mass=mass, initial_position=self.init_position)
+        self.quadrotor = Quadrotor(mass=mass, initial_position=self.init_position, dt=dt)
 
     def _get_obs(self):
         gate = self.gates[self.current_gate_idx][:3]
-        rel_pos = gate - self.position
-
+        #rel_pos = gate - self.position
+        rel_pos = np.zeros(3)
         # fake gate rotation for now
         rel_R = np.eye(3).flatten() # TODO placeholder for now
 
@@ -91,7 +83,6 @@ class VikavoltEnv(gym.Env):
         state = self.quadrotor.step(action)
         self.position = state.position
         self.velocity = state.velocity
-        #self.dummy_physics(action)
         # obs = self.sim.step(action)
         # lap_times = self.lap_times
         # lap_count = self.lap_count
