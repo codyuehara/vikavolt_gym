@@ -8,7 +8,7 @@ from gymnasium_env.envs.simulation import Quadrotor
 class VikavoltEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
-    def __init__(self, gate_positions = None, max_steps=1000):
+    def __init__(self, mass=1.0, init_position = None, gate_positions = None, max_steps=1000):
         # we have a vector of 31 components representing the observation space
         self.action_space = spaces.Box(
             low=np.array([0.0, -1.0, -1.0, -1.0] ,dtype=np.float32),
@@ -26,7 +26,8 @@ class VikavoltEnv(gym.Env):
         })
 
         # Quadrotor state
-        self.position = np.zeros(3)        
+        self.init_position = np.zeros(3) if init_position is None else init_position
+        self.position = self.init_position       
         self.velocity = np.zeros(3)        
         self.R = np.eye(3)
         self.prev_action = np.zeros(4)
@@ -48,7 +49,7 @@ class VikavoltEnv(gym.Env):
 
         self.lap_times = []
         self.lap_count = 0
-        self.quadrotor = Quadrotor()
+        self.quadrotor = Quadrotor(mass, init_position)
 
     def _get_obs(self):
         gate = self.gates[self.current_gate_idx][:3]
@@ -70,7 +71,7 @@ class VikavoltEnv(gym.Env):
         # We need the following line to seed self.np_random
         super().reset(seed=seed)
 
-        self.position = np.array([0.0,0.0,1.0])
+        self.position = self.init_position
         self.velocity = np.zeros(3)
         self.R = np.eye(3)
         self.prev_action = np.zeros(4)
@@ -82,22 +83,6 @@ class VikavoltEnv(gym.Env):
 
         return observation, {}
 
-    def dummy_physics(self, action, dt=0.02):
-        thrust, roll, pitch, yaw = action
-
-        # Extremely simplified kinematics (placeholder)
-        #self.velocity += np.array([pitch, roll, thrust - 0.5]) * dt
-        self.position += self.velocity * dt
-
-        # Dummy rotation update
-        # (Use real quaternion/rotation dynamics in your sim)
-        yaw_rate = yaw * 0.1
-        dR = np.array([
-            [np.cos(yaw_rate*dt), -np.sin(yaw_rate*dt), 0],
-            [np.sin(yaw_rate*dt),  np.cos(yaw_rate*dt), 0],
-            [0, 0, 1]
-        ])
-        self.R = self.R @ dR
 
     def step(self, action):
         # call simulation step

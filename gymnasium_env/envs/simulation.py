@@ -29,9 +29,9 @@ class State:
 #    motor_speeds: np.ndarray # (4,)
 
 class Quadrotor:
-    def __init__(self):
+    def __init__(self, mass=1.0, initial_position=None):
         # physical constants
-        self.mass = 1.0
+        self.mass = mass
         #self.arm_length = 0.2 # meters?
         #self.kf = 1e-5 # thrust coeff
         #self.km = 2e-6 # moment coeff
@@ -46,7 +46,7 @@ class Quadrotor:
 
         # initial state
         self.state = State(
-            position=np.zeros(3),
+            position=np.zeros(3) if initial_position is None else np.array(initial_position, dtype=float),
             velocity=np.zeros(3),
             orientation=np.array([0,0,0,1]),
             angular_velocity=np.zeros(3),
