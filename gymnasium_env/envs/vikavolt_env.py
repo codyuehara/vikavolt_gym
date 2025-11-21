@@ -4,6 +4,7 @@ from gymnasium import spaces
 import pygame
 import numpy as np
 from gymnasium_env.envs.simulation import Quadrotor
+from gymnasium_env.envs.simulation import Utils
 
 class VikavoltEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
@@ -46,7 +47,7 @@ class VikavoltEnv(gym.Env):
         self.quadrotor = Quadrotor(mass=mass, initial_position=self.init_position, dt=dt)
 
     def _get_obs(self):
-        gate = self.gates[self.current_gate_idx][:3]
+      #  gate = self.gates[self.current_gate_idx][:3]
         #rel_pos = gate - self.position
         rel_pos = np.zeros(3)
         # fake gate rotation for now
@@ -80,9 +81,12 @@ class VikavoltEnv(gym.Env):
 
     def step(self, action):
         # call simulation step
+        action = np.clip(action, self.action_space.low, self.action_space.high)
         state = self.quadrotor.step(action)
         self.position = state.position
         self.velocity = state.velocity
+        self.R = Utils.quat_to_rotation_matrix(state.orientation)
+        #self.R = state.
         # obs = self.sim.step(action)
         # lap_times = self.lap_times
         # lap_count = self.lap_count
@@ -95,7 +99,7 @@ class VikavoltEnv(gym.Env):
         #if self.collision_flag:
         #    terminated = True        
 
-        gate_pos = self.gates[self.current_gate_idx][:3]
+        #gate_pos = self.gates[self.current_gate_idx][:3]
         #if np.linalg.norm(self.position - gate_pos) < 0.5:
         #    self.current_gate_idx += 1
         #    if self.current_gate_idx >= len(self.gates):
@@ -104,7 +108,8 @@ class VikavoltEnv(gym.Env):
         #truncated = self.step_count >= self.max_steps
         truncated = False
     
-        dist_to_gate = np.linalg.norm(self.position - gate_pos)
+        #dist_to_gate = np.linalg.norm(self.position - gate_pos)
+        dist_to_gate = 10
         reward = -dist_to_gate
 
         obs = self._get_obs()

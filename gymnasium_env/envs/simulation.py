@@ -1,24 +1,39 @@
 import numpy as np
 from dataclasses import dataclass
 
-def normalize_quat(q):
-    return q / np.linalg.norm(q)
+class Utils:
+    @staticmethod
+    def quat_to_rotation_matrix(q):
+        # Rotation matrix
+        qx, qy, qz, qw = q
+        R = np.array([
+            [1 - 2*qy*qy - 2*qz*qz,     2*qx*qy - 2*qz*qw,     2*qx*qz + 2*qy*qw],
+            [2*qx*qy + 2*qz*qw,     1 - 2*qx*qx - 2*qz*qz,     2*qy*qz - 2*qx*qw],
+            [2*qx*qz - 2*qy*qw,         2*qy*qz + 2*qx*qw,   1 - 2*qx*qx - 2*qy*qy]
+        ])
+        return R
 
-def quat_mul(q1, q2):
-    x1, y1, z1, w1 = q1
-    x2, y2, z2, w2 = q2
-    
-    x = w1*x2 + x1*w2 + y1*z2 - z1*y2
-    y = w1*y2 - x1*z2 + y1*w2 + z1*x2
-    z = w1*z2 + x1*y2 - y1*x2 + z1*w2
-    w = w1*w2 - x1*x2 - y1*y2 - z1*z2
-    return np.array([x, y, z, w])
+    @staticmethod
+    def normalize_quat(q):
+        return q / np.linalg.norm(q)
 
-def quat_from_omega(q, omega):
-    """Quaternion derivative q_dot = 0.5 * q (x) [0, w]."""
-    ox, oy, oz = omega
-    omega_q = np.array([ox, oy, oz, 0.0])
-    return 0.5 * quat_mul(q, omega_q)
+    @staticmethod
+    def quat_mul(q1, q2):
+        x1, y1, z1, w1 = q1
+        x2, y2, z2, w2 = q2
+        
+        x = w1*x2 + x1*w2 + y1*z2 - z1*y2
+        y = w1*y2 - x1*z2 + y1*w2 + z1*x2
+        z = w1*z2 + x1*y2 - y1*x2 + z1*w2
+        w = w1*w2 - x1*x2 - y1*y2 - z1*z2
+        return np.array([x, y, z, w])
+
+    @staticmethod
+    def quat_from_omega(q, omega):
+        """Quaternion derivative q_dot = 0.5 * q (x) [0, w]."""
+        ox, oy, oz = omega
+        omega_q = np.array([ox, oy, oz, 0.0])
+        return 0.5 * Utils.quat_mul(q, omega_q)
 
 @dataclass
 class State:
@@ -64,12 +79,7 @@ class Quadrotor:
         )
 
         # Rotation matrix
-        qx, qy, qz, qw = q
-        R = np.array([
-            [1 - 2*qy*qy - 2*qz*qz,     2*qx*qy - 2*qz*qw,     2*qx*qz + 2*qy*qw],
-            [2*qx*qy + 2*qz*qw,     1 - 2*qx*qx - 2*qz*qz,     2*qy*qz - 2*qx*qw],
-            [2*qx*qz - 2*qy*qw,         2*qy*qz + 2*qx*qw,   1 - 2*qx*qx - 2*qy*qy]
-        ])
+        R = Utils.quat_to_rotation_matrix(q)
 
         # Translational dynamics
         thrust_world = R @ np.array([0,0,thrust])
@@ -80,7 +90,7 @@ class Quadrotor:
         ang_accel = self.J_inv @ (tau - np.cross(w, self.J @ w))
 
         # Quaternion derivative
-        q_dot = quat_from_omega(q, w)
+        q_dot = Utils.quat_from_omega(q, w)
 
         return State(
             position=vel,
@@ -97,7 +107,7 @@ class Quadrotor:
             return State(
                 position=s.position + scale * k.position,
                 velocity=s.velocity + scale * k.velocity,
-                orientation=normalize_quat(s.orientation + scale * k.orientation),
+                orientation=Utils.normalize_quat(s.orientation + scale * k.orientation),
                 angular_velocity=s.angular_velocity + scale * k.angular_velocity
             )
         
