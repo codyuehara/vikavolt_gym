@@ -80,10 +80,13 @@ class Quadrotor:
 
         # Rotation matrix
         R = Utils.quat_to_rotation_matrix(q)
+        print("R in derivatives: ", R)
 
         # Translational dynamics
         thrust_world = R @ np.array([0,0,thrust])
+        print("thrust_world: ", thrust_world)
         accel = self.g + thrust_world / self.mass
+        print("accel: ", accel)
 
         # Rotational dynamics
         tau = np.array([tau_roll, tau_pitch, tau_yaw])
