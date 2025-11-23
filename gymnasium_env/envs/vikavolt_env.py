@@ -9,7 +9,7 @@ from gymnasium_env.envs.simulation import Utils
 class VikavoltEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
-    def __init__(self, mass=1.0, init_position = None, init_orienation = None, gate_positions = None,  dt=0.01):
+    def __init__(self, mass=1.0, init_position = None, init_orientation = None, gate_positions = None,  dt=0.01):
         # we have a vector of 31 components representing the observation space
         self.action_space = spaces.Box(
             low=np.array([0.0, -1.0, -1.0, -1.0] ,dtype=np.float32),
@@ -32,7 +32,7 @@ class VikavoltEnv(gym.Env):
         self.init_position = init_position
         self.position = self.init_position.copy()
         self.init_orientation = init_orientation
-        self.orientation = self.init_orienation.copy()
+        self.orientation = self.init_orientation.copy()
         self.velocity = np.zeros(3)        
         self.R = np.eye(3)
         self.prev_action = np.zeros(4)
