@@ -86,7 +86,8 @@ class VikavoltEnv(gym.Env):
 
     def step(self, action):
         # call simulation step
-        action = np.clip(action, self.action_space.low, self.action_space.high)
+        action = self.action
+        #action = np.clip(action, self.action_space.low, self.action_space.high)
         state = self.quadrotor.step(action)
         self.position = state.position
         self.velocity = state.velocity
