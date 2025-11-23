@@ -44,7 +44,7 @@ class State:
 #    motor_speeds: np.ndarray # (4,)
 
 class Quadrotor:
-    def __init__(self, mass=1.0, init_position=None, init_orientation, dt=0.01):
+    def __init__(self, mass=1.0, init_position=None, init_orientation=None, dt=0.01):
         # physical constants
         self.mass = mass
         #self.arm_length = 0.2 # meters?
