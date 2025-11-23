@@ -9,7 +9,7 @@ from gymnasium_env.envs.simulation import Utils
 class VikavoltEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
-    def __init__(self, mass=1.0, init_position = None, gate_positions = None,  dt=0.01):
+    def __init__(self, mass=1.0, init_position = None, init_orienation = None, gate_positions = None,  dt=0.01):
         # we have a vector of 31 components representing the observation space
         self.action_space = spaces.Box(
             low=np.array([0.0, -1.0, -1.0, -1.0] ,dtype=np.float32),
@@ -20,6 +20,7 @@ class VikavoltEnv(gym.Env):
         self.observation_space = spaces.Dict({
             "pos": spaces.Box(-np.inf, np.inf, (3,), np.float32),
             "vel": spaces.Box(-np.inf, np.inf, (3,), np.float32),
+            "ori": spaces.Box(-np.inf, np.inf, (4,), np.float32),
             "R":   spaces.Box(-np.inf, np.inf, (9,), np.float32),
             "rel_gate_pos": spaces.Box(-np.inf, np.inf, (3,), np.float32),
             "rel_gate_R":   spaces.Box(-np.inf, np.inf, (9,), np.float32),
@@ -30,6 +31,8 @@ class VikavoltEnv(gym.Env):
 #        self.init_position = np.zeros(3) if init_position is None else init_position
         self.init_position = init_position
         self.position = self.init_position.copy()
+        self.init_orientation = init_orientation
+        self.orientation = self.init_orienation.copy()
         self.velocity = np.zeros(3)        
         self.R = np.eye(3)
         self.prev_action = np.zeros(4)
@@ -56,6 +59,7 @@ class VikavoltEnv(gym.Env):
         return {
             "pos": self.position,
             "vel": self.velocity,
+            "ori": self.orientation,
             "R": self.R.flatten(),
             "rel_gate_pos": rel_pos,
             "rel_gate_R": rel_R,
@@ -67,6 +71,7 @@ class VikavoltEnv(gym.Env):
         super().reset(seed=seed)
 
         self.position = self.init_position
+        self.orientation = self.init_orientation
         self.velocity = np.zeros(3)
         self.R = np.eye(3)
         self.prev_action = np.zeros(4)
@@ -85,6 +90,7 @@ class VikavoltEnv(gym.Env):
         state = self.quadrotor.step(action)
         self.position = state.position
         self.velocity = state.velocity
+        self.orientation = state.orientation
         self.R = Utils.quat_to_rotation_matrix(state.orientation)
         #self.R = state.
         # obs = self.sim.step(action)
