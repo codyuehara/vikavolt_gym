@@ -44,7 +44,7 @@ class State:
 #    motor_speeds: np.ndarray # (4,)
 
 class Quadrotor:
-    def __init__(self, mass=1.0, initial_position=None, dt=0.01):
+    def __init__(self, mass=1.0, init_position=None, init_orientation, dt=0.01):
         # physical constants
         self.mass = mass
         #self.arm_length = 0.2 # meters?
@@ -61,9 +61,9 @@ class Quadrotor:
 
         # initial state
         self.state = State(
-            position=np.zeros(3) if initial_position is None else initial_position,
+            position=np.zeros(3) if init_position is None else init_position,
             velocity=np.zeros(3),
-            orientation=np.array([0,0,0,1]),
+            orientation=np.array([0,0,0,1]) if init_orientation is None else init_orientation, 
             angular_velocity=np.zeros(3),
          #   motor_speeds=np.zeros(4),
         )
