@@ -1,5 +1,6 @@
 import numpy as np
 from dataclasses import dataclass
+from ground import GroundContact
 
 class Utils:
     @staticmethod
@@ -67,6 +68,12 @@ class Quadrotor:
             angular_velocity=np.zeros(3),
          #   motor_speeds=np.zeros(4),
         )
+
+        self.ground = GroundContact(
+            restitution=0.0,
+            friction=0.1,
+            angular_damping=0.3
+        )
     
 
     def derivatives(self, state, control):
@@ -80,13 +87,10 @@ class Quadrotor:
 
         # Rotation matrix
         R = Utils.quat_to_rotation_matrix(q)
-        print("R in derivatives: ", R)
 
         # Translational dynamics
         thrust_world = R @ np.array([0,0,thrust])
-        print("thrust_world: ", thrust_world)
         accel = self.g + thrust_world / self.mass
-        print("accel: ", accel)
 
         # Rotational dynamics
         tau = np.array([tau_roll, tau_pitch, tau_yaw])
@@ -132,4 +136,7 @@ class Quadrotor:
     
     def step(self, control):
         self.rk4_step(control)
+
+        self.ground.apply(self.state)
+
         return self.state
